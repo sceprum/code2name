@@ -1,0 +1,36 @@
+data:
+  train: 'data/preprocessed/java-small/training.feather'
+  val: 'data/preprocessed/java-small/validation.feather'
+  test: 'data/preprocessed/java-small/test.feather'
+
+output_dir: 'data/artifacts'
+load_model_path:
+cache_dir: '/home/lab/.cache/huggingface/transformers'
+
+model: 'microsoft/codebert-base'
+
+do_train: True
+do_eval: True
+do_test: True
+
+training:
+  train_batch_size: 64 # Batch size per GPU/CPU for training
+  eval_batch_size: 64 # Batch size per GPU/CPU for evaluation
+  gradient_accumulation_steps: 1 # Number of updates steps to accumulate before performing a backward/update pass
+  learning_rate: 5e-5 # The initial learning rate for Adam
+  beam_size: 10 # beam size for beam search
+  weight_decay: 0.0 # Weight decay if we apply some
+  adam_epsilon: 1e-8 # Epsilon for Adam optimizer
+  max_grad_norm: 1.0 # Max gradient norm
+  num_train_epochs: 3.0 # Total number of training epochs to perform
+  max_steps: -1 # If > 0: set total number of training steps to perform. Override num_train_epochs
+  eval_steps: 500
+  train_steps: 30000
+  warmup_steps: 0 # Linear warmup over warmup_steps
+  seed: 42 # random seed for initialization
+  max_target_length: 32
+  max_source_length: 256
+
+hydra:
+  run:
+    dir: .
