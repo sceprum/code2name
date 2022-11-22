@@ -1,18 +1,24 @@
 import re
+from pathlib import Path
 
 import pandas as pd
 
 from CodeBERT.CodeBERT.code2nl.run import Example
 
 
+def get_absolute_path(p):
+    return Path(__file__).parent.parent / p
+
+
 def load_dataset(path):
+    path = get_absolute_path(path)
     frame = pd.read_feather(path)
     frame['length'] = frame.method.apply(len)
     frame = frame.query('length<10000')
     examples = []
     upper = re.compile('[A-Z]')
     for idx, source, name in zip(frame.index, frame.method, frame.name):
-        target = ' ' .join(name_to_sequence(name, upper))
+        target = ' '.join(name_to_sequence(name, upper))
         ex = Example(idx=idx, source=source, target=target)
         examples.append(ex)
 

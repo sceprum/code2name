@@ -49,26 +49,27 @@ def _get_method_name(match):
 
 
 class SourceFileParser:
-    _modifiers_str = 'public|protected|private|static|synchronized|final|abstract|native'
-    _signature_regex = \
-        r'(((' + _modifiers_str + r')\s*)* *([\w\<\>\[\]?.]+)\s+(\w+) *\(([\w\<\>\[\]\?.,\s]*)\)[\s\w\.,]+)\{'
-    name_group_num = 5
-    _signature_pat = re.compile(_signature_regex)
-    simple_argument_pat = re.compile(r'[\w\[\]\.\s]+?(\s*\.{3})?\s*([\w\[\]]+)')
-    _type_parameter = re.compile(r'(\<[\w,\s\.\?\[\]]+\>)')
-    _context_blocks = DictConfig({'"': '"', '/*': '*/', '//': '\n'})
-    _block_start_pattern = re.compile(r'(/\*|//|")')
-    _spaces_pattern = re.compile('\s\s+')
+    name_group_num = 6
 
     def __init__(self):
-        self._modifiers = set(self._modifiers_str.split('|'))
+        modifiers_str = 'public|protected|private|static|synchronized|final|abstract|native'
+        self._signature_regex = \
+            r'((' + modifiers_str +\
+            r')\s*)*([\w\.]+)(\<[\w\<\>\[\]?\.,\s]*\>)?(\s*\[\s*\])?\s+(\w+) *\(([\w\<\>\[\]\?.,\s]*)\)[\s\w\.,]+\{'
+        #   return type^  arguments of generic^         array^ method name^  method args in brackets^     ^exceptions
+
+        self._signature_pat = re.compile(self._signature_regex)
+        self._simple_argument_pat = re.compile(r'[\w\[\]\.\s]+?(\s*\.{3})?\s*([\w\[\]]+)')
+        self._type_parameter = re.compile(r'(\<[\w,\s\.\?\[\]]+\>)')
+        self._context_blocks = DictConfig({'"': '"', '/*': '*/', '//': '\n'})
+        self._block_start_pattern = re.compile(r'(/\*|//|")')
+        self._spaces_pattern = re.compile('\s\s+')
+        self._modifiers = set(modifiers_str.split('|'))
 
     def get_valid_modifiers(self):
         return self._modifiers
 
     def get_declarations_by_path(self, path: Path, extension='*.java'):
-        pat = re.compile(self._signature_regex)
-        modifiers = self.get_valid_modifiers()
         filepaths = list(path.glob('*'))
 
         if len(filepaths) == 0:
@@ -80,31 +81,32 @@ class SourceFileParser:
 
             for filepath in tqdm(list(proj_dir.glob(extension)), desc=f'Parsing {proj_dir.name}'):
                 # print(filepath)
-                yield from self.get_file_declarations(filepath, pat, modifiers)
+                yield from self.get_file_declarations(filepath)
 
     def clear_body(self, s):
         return ' '.join(split_by_pattern(s, self._spaces_pattern))
 
-    def get_file_declarations(self, filepath, pat, valid_modifiers=None):
+    def get_file_declarations(self, filepath):
         """
         Iterates method signature and body.
         Regex to find signature is splitted in two to make them simpler and faster to evaluate
         """
         code = read_source_file(filepath)
-        for m in pat.finditer(code):
+        for m in self._signature_pat.finditer(code):
 
-            if valid_modifiers and (
-                    _get_modifier(m) in valid_modifiers):  # modifier instead of type (class constructor)
+            modifier = _get_type(m)
+            if self._modifiers and (modifier in self._modifiers):  # modifier instead of type (class constructor)
                 continue
 
             if is_commented_out(code, m):
                 continue
 
-            if not self._matches_method_arguments(_get_method_args(m)):
+            args = _get_method_args(m)
+            if not self._matches_method_arguments(args):
                 continue
 
-            method_name = _get_method_name(m)[0]
-            if method_name[0].isupper():
+            method_name = _get_method_name(m)
+            if (method_name == 'if') or (method_name[0].isupper()):
                 continue
 
             body_start = m.end() - 1
@@ -135,7 +137,7 @@ class SourceFileParser:
             res = self._matches_method_arguments(simplified)
             return res
         for arg in string.split(','):
-            if not self.simple_argument_pat.fullmatch(arg.strip()):
+            if not self._simple_argument_pat.fullmatch(arg.strip()):
                 return False
         return True
 
@@ -222,11 +224,11 @@ def split_by_pattern(string, pat):
 
 
 def _get_method_args(match):
-    return match.group(6)
+    return match.group(7)
 
 
-def _get_modifier(match):
-    m = match.group(4)
+def _get_type(match):
+    m = match.group(3)
     return m
 
 

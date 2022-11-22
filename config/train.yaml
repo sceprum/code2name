@@ -3,19 +3,22 @@ data:
   val: 'data/preprocessed/java-small/validation.feather'
   test: 'data/preprocessed/java-small/test.feather'
 
-output_dir: 'data/artifacts'
+output_dir: 'artifacts'
 load_model_path:
 cache_dir: '/home/lab/.cache/huggingface/transformers'
 
-model: 'microsoft/codebert-base'
+model:
+  name: 'microsoft/codebert-base'
+#  name: 'huggingface/CodeBERTa-small-v1'
+#  model_class: 'RobertaForMaskedLM'
 
 do_train: True
 do_eval: True
 do_test: True
 
 training:
-  train_batch_size: 64 # Batch size per GPU/CPU for training
-  eval_batch_size: 64 # Batch size per GPU/CPU for evaluation
+  train_batch_size: 128 # Batch size per GPU/CPU for training
+  eval_batch_size: 128 # Batch size per GPU/CPU for evaluation
   gradient_accumulation_steps: 1 # Number of updates steps to accumulate before performing a backward/update pass
   learning_rate: 5e-5 # The initial learning rate for Adam
   beam_size: 10 # beam size for beam search
@@ -33,4 +36,4 @@ training:
 
 hydra:
   run:
-    dir: .
+    dir: ./experiments/${now:%Y-%m-%d}-${now:%H-%M-%S}

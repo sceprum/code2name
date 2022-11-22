@@ -1,38 +1,36 @@
 import os
 
+from pipeline.data import convert_examples_to_dataset
+from pipeline.utils import create_logger
+
+# TODO: remove
+os.environ['TRANSFORMERS_OFFLINE'] = 'TRUE'
+
 from torch.utils.tensorboard import SummaryWriter
 
-os.environ['TRANSFORMERS_OFFLINE'] = 'TRUE'
+from src.pipeline import load_model
+
 import numpy as np
 from itertools import cycle
 import random
 from types import SimpleNamespace
-import logging
 import hydra
 import torch
-from torch import nn
 from torch.utils.data import TensorDataset, DataLoader, SequentialSampler, RandomSampler
 from tqdm import tqdm
-from transformers import RobertaTokenizer, RobertaConfig, RobertaModel, AdamW, get_linear_schedule_with_warmup
-
+from transformers import AdamW, get_linear_schedule_with_warmup
 from CodeBERT.CodeBERT.code2nl import bleu
-from CodeBERT.CodeBERT.code2nl.model import Seq2Seq
 from CodeBERT.CodeBERT.code2nl.run import convert_examples_to_features, set_seed
 from src.data import load_dataset
-
-logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s -   %(message)s',
-                    datefmt='%m/%d/%Y %H:%M:%S',
-                    level=logging.INFO)
-logger = logging.getLogger(__name__)
 
 
 @hydra.main(config_path='../config', config_name='train')
 def train(config):
+    logger = create_logger()
     device_type = 'cuda' if torch.cuda.is_available() else 'cpu'
     device = torch.device(device_type)
 
     args = SimpleNamespace(**config)
-
     training_conf = config['training']
     train_args = SimpleNamespace(**training_conf, n_gpu=1)
     # Set seed
@@ -41,38 +39,18 @@ def train(config):
     if os.path.exists(args.output_dir) is False:
         os.makedirs(args.output_dir)
 
-    config_class, model_class, tokenizer_class = RobertaConfig, RobertaModel, RobertaTokenizer
-
-    cache_dir = args.cache_dir
-    config = config_class.from_pretrained(args.model, cache_dir=cache_dir)
-    tokenizer = tokenizer_class.from_pretrained(args.model, cache_dir=cache_dir)
-
-    # budild model
-    encoder = model_class.from_pretrained(args.model, config=config, cache_dir=cache_dir)
-    decoder_layer = nn.TransformerDecoderLayer(d_model=config.hidden_size, nhead=config.num_attention_heads)
-    decoder = nn.TransformerDecoder(decoder_layer, num_layers=6)
-    model = Seq2Seq(encoder=encoder, decoder=decoder, config=config,
-                    beam_size=train_args.beam_size, max_length=train_args.max_target_length,
-                    sos_id=tokenizer.cls_token_id, eos_id=tokenizer.sep_token_id)
-    if args.load_model_path is not None:
-        logger.info("reload model from {}".format(args.load_model_path))
-        model.load_state_dict(torch.load(args.load_model_path))
+    model, tokenizer = load_model(**args.model, train_args=train_args, cache_dir=args.cache_dir)
 
     model.to(device)
 
-    writer = SummaryWriter(log_dir='data/artifacts/runs')
+    writer = SummaryWriter(log_dir='tb-events')
 
     data_paths = args.data
     if args.do_train:
         # Prepare training data loader
         train_path = data_paths['train']
         train_examples = load_dataset(train_path)
-        train_features = convert_examples_to_features(train_examples, tokenizer, train_args, stage='train')
-        all_source_ids = torch.tensor([f.source_ids for f in train_features], dtype=torch.long)
-        all_source_mask = torch.tensor([f.source_mask for f in train_features], dtype=torch.long)
-        all_target_ids = torch.tensor([f.target_ids for f in train_features], dtype=torch.long)
-        all_target_mask = torch.tensor([f.target_mask for f in train_features], dtype=torch.long)
-        train_data = TensorDataset(all_source_ids, all_source_mask, all_target_ids, all_target_mask)
+        train_data = convert_examples_to_dataset(tokenizer, train_args, train_examples, stage='train')
 
         train_sampler = RandomSampler(train_data)
         train_dataloader = DataLoader(
@@ -96,7 +74,8 @@ def train(config):
         logger.info("***** Running training *****")
         logger.info("  Num examples = %d", len(train_examples))
         logger.info("  Batch size = %d", train_args.train_batch_size)
-        logger.info("  Num epoch = %d", num_train_optimization_steps * train_args.train_batch_size // len(train_examples))
+        logger.info("  Num epoch = %d",
+                    num_train_optimization_steps * train_args.train_batch_size // len(train_examples))
 
         model.train()
         dev_dataset = {}
@@ -141,12 +120,7 @@ def train(config):
                     eval_examples, eval_data = dev_dataset['dev_loss']
                 else:
                     eval_examples = load_dataset(data_paths['val'])
-                    eval_features = convert_examples_to_features(eval_examples, tokenizer, train_args, stage='dev')
-                    all_source_ids = torch.tensor([f.source_ids for f in eval_features], dtype=torch.long)
-                    all_source_mask = torch.tensor([f.source_mask for f in eval_features], dtype=torch.long)
-                    all_target_ids = torch.tensor([f.target_ids for f in eval_features], dtype=torch.long)
-                    all_target_mask = torch.tensor([f.target_mask for f in eval_features], dtype=torch.long)
-                    eval_data = TensorDataset(all_source_ids, all_source_mask, all_target_ids, all_target_mask)
+                    eval_data = convert_examples_to_dataset(tokenizer, train_args, eval_examples, stage='dev')
                     dev_dataset['dev_loss'] = eval_examples, eval_data
                 eval_sampler = SequentialSampler(eval_data)
                 eval_dataloader = DataLoader(eval_data, sampler=eval_sampler, batch_size=train_args.eval_batch_size)
@@ -258,8 +232,8 @@ def train(config):
         files = []
         if data_paths['val'] is not None:
             files.append(data_paths['val'])
-        if  data_paths['test'] is not None:
-            files.append( data_paths['test'])
+        if data_paths['test'] is not None:
+            files.append(data_paths['test'])
         for idx, file in enumerate(files):
             logger.info("Test file: {}".format(file))
             eval_examples = load_dataset(file)
