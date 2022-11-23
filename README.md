@@ -75,10 +75,10 @@ The command also prints F1 scores for each split. The expected metrics are prese
 | --- | --- | -- |
 | F1 score | 0.528 | 0.519 |
 
-In the original paper it is reported that their model achieves F1 score of 0.43 using java-small dataset. So 
-metrics, that are achieved by CodeBERT seems good enough. Difference of the model's performance on validation and test
-splits doesn't look like a problem because in java-small dataset these splits consists of a single project each and
-structure and complexity of a code may differ too.
+As it is reported in original paper, the presented model achieves F1 score of 0.43 on java-small dataset. So 
+metrics in the table seem good enough.  Difference of the model's performance on validation and test
+splits doesn't look like a problem, because in java-small dataset these splits consists of a single project each and
+structure and complexity of a code may differ.
 
 
 
