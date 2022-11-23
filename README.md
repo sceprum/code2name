@@ -1,24 +1,25 @@
 # Prediction of Java method name by method body
 
-## Data and preprocessing
+To solve the problem it is reasonable to select a pre-trained model and fine-tune it on some dataset.
+[CodeBERT](https://huggingface.co/microsoft/codebert-base) looks like a good choice. 
 
-### Approach to data parsing
-
-To train and estimate quality of the model we can use datasets, presented in code2seq paper (reference).
-Data used in this paper available in two forms: source files and AST trees, stored in .c2s files. Since we want to
-provide code of the method as input to the model, we have the following options:
+To train and estimate quality of the model we will use datasets, presented in 
+[code2seq paper](https://arxiv.org/abs/1808.01400). 
+Data used in this paper is available in two forms: source files and AST trees stored in .c2s files. CodeBERT accepts
+source code as input so some kind of preprocessing is required to prepare data for the training.
+Basically, we have the following options:
 - manually parse files with source code 
-- use some tool that are designed to build AST to extract methods from the source code
+- use some tool that are designed to parse a source code and use it to extract methods and their names
 - use some another tool to unparse existing AST and reproduce the source code of the method
 
-In the first case we basically need to find a declaration of a method and define the limits of it's body.
+To train a model we need to find a declaration of a method and define the limits of it's body.
 It may seem as pretty straightforward task, but there are still some corner-cases like presence of commented-out code, 
-symbols in strings and so on.
-So it is still looks like reasonable solution for the demo purposes, but it is better to replace the parsing 
-functionality with some specialized software like [astminer](https://github.com/JetBrains-Research/astminer) or 
-[javaparser](https://github.com/javaparser/javaparser).
+symbols in strings and so on. This option is used in this repository, and it looks like
+reasonable solution for the demo purposes. But to achieve the better quality of the datasets it is better to replace 
+the parsing functionality with some specialized software like [astminer](https://github.com/JetBrains-Research/astminer)
+or [javaparser](https://github.com/javaparser/javaparser).
 
-## Training a model
+## Training and evaluating the model
 
 ### Download submodules
 ```
@@ -58,7 +59,7 @@ This command loads configuration for training that are located in `config/train.
 parameters specified in configuration. The loss curves and models are saved in the `experiments` directory. Each
 new run creates a new subdirectory to store training artifacts. 
 
-### Evaluate performance of the trained model
+## Evaluate performance of the trained model
 ```
 python -m pipeline.evaluate --splits val test
 ```
@@ -68,7 +69,17 @@ also accepts a path to some other experiment directory (`-e` argument) and path 
 each example and predicted value. Script saves the outputs in the same experiment dir if no other value was provided to
 
 
-The command also prints F1 scores for each split. 
+The command also prints F1 scores for each split. The expected metrics are presented in the table below
+
+| Metric | validation | test |
+| --- | --- | -- |
+| F1 score | 0.528 | 0.519 |
+
+In the original paper it is reported that their model achieves F1 score of 0.43 using java-small dataset. So 
+metrics, that are achieved by CodeBERT seems good enough. Difference of the model's performance on validation and test
+splits doesn't look like a problem because in java-small dataset these splits consists of a single project each and
+structure and complexity of a code may differ too.
+
 
 
 
