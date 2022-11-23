@@ -1,15 +1,8 @@
 import os
-
-from src.logging import log_metrics, save_best_model, save_last_checkpoint, save_best_model_by_blue
-
-# TODO: remove
-os.environ['TRANSFORMERS_OFFLINE'] = 'TRUE'
+from src.logging import log_metrics, save_best_model, save_last_checkpoint
 from pipeline.utils import create_logger
-
 from torch.utils.tensorboard import SummaryWriter
-
-from src.pipeline import load_model, decode_predicts, compute_blue, select_subset_to_estimate_bleu, evaluate_model, \
-    collect_predicts, make_step, log_training_info, create_optimizer, get_dataloader
+from src.pipeline import load_model, evaluate_model, make_step, log_training_info, create_optimizer, get_dataloader
 
 import numpy as np
 from itertools import cycle
@@ -28,7 +21,7 @@ class TrainingPipeline:
     """
 
     # Is still looks cluttered (but much better than original code) and should be replaced to LightningModule-based
-    # pipeline from src/lightning_pipeline.py
+    # pipeline from src/lightning_pipeline.py in the future
 
     def __init__(self, config):
         self.config = config
@@ -99,15 +92,14 @@ class TrainingPipeline:
 
             if (global_step + 1) % self.train_args.eval_steps == 0:
                 # Eval model with dev dataset
-                eval_loss = self.make_eval_step(device, eval_dataloader, global_step, logger, model, tokenizer,
-                                                train_loss)
+                eval_loss = self.make_eval_step(device, eval_dataloader, global_step, logger, model)
                 log_metrics(eval_loss, global_step, logger, train_loss)
                 self.writer.add_scalar('Loss/train_', train_loss, step)
                 self.writer.add_scalar('Loss/val', eval_loss, step)
                 nb_tr_steps = 0
                 train_loss_sum = 0
 
-    def make_eval_step(self, device, eval_dataloader, global_step, logger, model, tokenizer, train_loss):
+    def make_eval_step(self, device, eval_dataloader, global_step, logger, model):
 
         logger.info("\n***** Running evaluation *****")
         eval_loss = evaluate_model(device, eval_dataloader, model)
@@ -119,16 +111,6 @@ class TrainingPipeline:
             save_best_model(self.args, logger, model)
             logger.info("  Best ppl:%s", round(np.exp(eval_loss), 5))
         return eval_loss
-
-        # bleu_dataloader, bleu_dataset, blue_examples = select_subset_to_estimate_bleu(
-        #     eval_dataset, self.train_args, eval_examples)
-        # predicts = collect_predicts(device, bleu_dataloader, model)
-        # predictions = decode_predicts(predicts, tokenizer)
-        # dev_bleu = compute_blue(self.args, blue_examples, logger, predictions)
-        # if dev_bleu > self.best_bleu:
-        #     logger.info("  Best bleu:%s", dev_bleu)
-        #     save_best_model_by_blue(self.args, logger, model)
-        # self.best_bleu = dev_bleu
 
 
 @hydra.main(config_path='../config', config_name='train')
