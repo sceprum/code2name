@@ -1,11 +1,13 @@
 import os
 import random
+from types import SimpleNamespace
 
 import numpy as np
 import torch
 import transformers
 from torch.optim import AdamW
 from torch.utils.data import SequentialSampler, DataLoader, TensorDataset
+from tqdm import tqdm
 from transformers import RobertaModel, RobertaTokenizer, RobertaConfig, AdamW
 
 from CodeBERT.CodeBERT.code2nl import bleu
@@ -92,17 +94,22 @@ def evaluate_model(device, eval_dataloader, model):
     return eval_loss
 
 
-def collect_predicts(device, eval_dataloader, model):
-    # Start Evaling model
+def collect_predicts(device, eval_dataloader, model, first_predict_only=False, show_progress=False):
     model.eval()
     predicts = []
     with torch.no_grad():
+        if show_progress:
+            eval_dataloader = tqdm(eval_dataloader, desc='Evaluating the model and collecting predicts')
+
         for batch in eval_dataloader:
             batch = tuple(t.to(device) for t in batch)
             source_ids, source_mask, target_ids, target_mask = batch
 
             y_pred = model(source_ids=source_ids, source_mask=source_mask)
-            predicts.append(y_pred.cpu().numpy())
+            y_pred_arr = y_pred.cpu().numpy()
+            if first_predict_only:
+                y_pred_arr = y_pred_arr[:, 0]
+            predicts.append(y_pred_arr)
     predicts = np.vstack(predicts)
     return predicts
 
@@ -141,3 +148,13 @@ def get_dataloader(tokenizer, train_args, train_path, sampler_class, stage):
         train_data, sampler=train_sampler,
         batch_size=train_args.train_batch_size)
     return train_dataloader, train_data, train_examples
+
+
+def get_train_args(config):
+    training_conf = config['training']
+    train_args = SimpleNamespace(**training_conf, n_gpu=1)
+    return train_args
+
+
+def get_device():
+    return 'cuda' if torch.cuda.is_available() else 'cpu'

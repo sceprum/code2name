@@ -2,7 +2,8 @@ import os
 from src.logging import log_metrics, save_best_model, save_last_checkpoint
 from pipeline.utils import create_logger
 from torch.utils.tensorboard import SummaryWriter
-from src.pipeline import load_model, evaluate_model, make_step, log_training_info, create_optimizer, get_dataloader
+from src.pipeline import load_model, evaluate_model, make_step, log_training_info, create_optimizer, get_dataloader, \
+    get_train_args, get_device
 
 import numpy as np
 from itertools import cycle
@@ -27,15 +28,15 @@ class TrainingPipeline:
         self.config = config
         self.writer = SummaryWriter(log_dir='tb-events')
         self.args = SimpleNamespace(**self.config)
-        training_conf = self.config['training']
-        self.train_args = SimpleNamespace(**training_conf, n_gpu=1)
+
+        self.train_args = get_train_args(config)
         set_seed(self.train_args)
         self.best_bleu = 0
         self.best_loss = 1e6
 
     def run(self):
         logger = create_logger()
-        device_type = 'cuda' if torch.cuda.is_available() else 'cpu'
+        device_type = get_device()
         device = torch.device(device_type)
 
         # Set seed
@@ -51,26 +52,30 @@ class TrainingPipeline:
             tokenizer, self.train_args, data_paths['val'], SequentialSampler, stage='dev')
 
         # Prepare training data loader
-        train_dataloader, train_dataset, _ = get_dataloader(tokenizer, self.train_args, data_paths['train'],
-                                                            RandomSampler,
-                                                            stage='train')
+        train_dataloader, train_dataset, _ = get_dataloader(
+            tokenizer, self.train_args, data_paths['train'], RandomSampler, stage='train')
         train_dataloader = cycle(train_dataloader)
 
         num_train_optimization_steps = self.train_args.train_steps
 
         # Prepare optimizer and schedule (linear warmup and decay)
         optimizer = create_optimizer(model, self.train_args)
-        scheduler = get_linear_schedule_with_warmup(optimizer, num_warmup_steps=self.train_args.warmup_steps,
-                                                    num_training_steps=num_train_optimization_steps)
+        scheduler = get_linear_schedule_with_warmup(
+            optimizer, num_warmup_steps=self.train_args.warmup_steps, num_training_steps=num_train_optimization_steps)
 
         # Start training
         log_training_info(logger, num_train_optimization_steps, self.train_args, train_dataset)
 
-        # nb_tr_steps, train_loss_sum, best_bleu, = 0, 0, 0
+        self.run_training_loop(
+            device, eval_dataloader, logger, model, num_train_optimization_steps, optimizer, scheduler,
+            train_dataloader)
+
+    def run_training_loop(self, device, eval_dataloader, logger, model, num_train_optimization_steps, optimizer,
+                          scheduler,
+                          train_dataloader):
         nb_tr_steps = 0
         train_loss_sum = 0
         bar = tqdm(range(num_train_optimization_steps), total=num_train_optimization_steps)
-
         for global_step, step in enumerate(bar):
             model.train()
             batch = next(train_dataloader)
@@ -81,7 +86,6 @@ class TrainingPipeline:
 
             self.writer.add_scalar('Loss/train', loss, step)
 
-            # if args.n_gpu > 1:
             loss = loss.mean()  # mean() to average on multi-gpu.
             train_loss_sum += loss.item()
             nb_tr_steps += 1

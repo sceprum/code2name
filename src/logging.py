@@ -30,10 +30,6 @@ def save_last_checkpoint(args, model, step):
     model_to_save = model.module if hasattr(model, 'module') else model  # Only save the model it-self
     output_model_file = os.path.join(last_output_dir, f"pytorch_model.bin")
     torch.save(model_to_save.state_dict(), output_model_file)
-    # TODO: remove
-    if step % 5000 == 0:
-        output_model_file = os.path.join(last_output_dir, f"pytorch_model-{step}.bin")
-        torch.save(model_to_save.state_dict(), output_model_file)
 
 
 def save_best_model_by_blue(args, logger, model):

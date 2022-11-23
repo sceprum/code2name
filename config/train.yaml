@@ -28,7 +28,7 @@ training:
   num_train_epochs: 3.0 # Total number of training epochs to perform
   max_steps: -1 # If > 0: set total number of training steps to perform. Override num_train_epochs
   eval_steps: 1000
-  train_steps: 50000
+  train_steps: 20000
   warmup_steps: 0 # Linear warmup over warmup_steps
   seed: 42 # random seed for initialization
   max_target_length: 32

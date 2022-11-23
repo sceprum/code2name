@@ -48,6 +48,14 @@ python -m pipeline.preprocess -i data/raw/java-small -o data/preprocessed/java-s
 ```
 This command extracts methods from the source files and saves extracted information in Apache Arrow format
 
-###
+### Train model
 
+```
+python -m pipeline.train
+```
+
+After execution of this comman
+
+
+### 
 
