@@ -41,7 +41,7 @@ def evaluate(splits, experiment_dir=None, output_dir=None):
     if experiment_dir is None:
         experiment_dir = get_last_experiment_dir(config)
         if experiment_dir is None:
-            print('Failed to found directory with experiment. Please specify it using command-line arguments')
+            print('Failed to find directory with an experiment. Please specify it using command-line arguments')
             return
     else:
         experiment_dir = Path(experiment_dir)
