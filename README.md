@@ -19,7 +19,7 @@ reasonable solution for the demo purposes. But to achieve the better quality of 
 the parsing functionality with some specialized software like [astminer](https://github.com/JetBrains-Research/astminer)
 or [javaparser](https://github.com/javaparser/javaparser).
 
-## Training and evaluating the model
+## Training a model
 
 ### Download submodules
 ```

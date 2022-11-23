@@ -331,6 +331,7 @@ def parse_raw_data_dir(data_path, splits, save_path):
         data = convert_to_feather(split_dir)
         if len(data) == 0:
             continue
+        split_dir.mkdir(exist_ok=True)
         feather_path = save_path / (split_name + '.feather')
         data.to_feather(feather_path)
 

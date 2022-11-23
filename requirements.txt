@@ -4,5 +4,4 @@ transformers
 pandas
 hydra
 tqdm
-tensorboard
 bleu
