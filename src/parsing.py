@@ -324,6 +324,7 @@ def _print_blocks(text, blocks):
 
 def parse_raw_data_dir(data_path, splits, save_path):
     save_path = Path(save_path)
+    save_path.mkdir(exist_ok=True)
     data_path = Path(data_path)
     for split_name in splits:
         split_dir = data_path / split_name
@@ -331,7 +332,6 @@ def parse_raw_data_dir(data_path, splits, save_path):
         data = convert_to_feather(split_dir)
         if len(data) == 0:
             continue
-        split_dir.mkdir(exist_ok=True)
         feather_path = save_path / (split_name + '.feather')
         data.to_feather(feather_path)
 
