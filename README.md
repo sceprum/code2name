@@ -54,8 +54,24 @@ This command extracts methods from the source files and saves extracted informat
 python -m pipeline.train
 ```
 
-After execution of this comman
+This command loads configuration for training that are located in `config/train.yaml` and trains the model using
+parameters specified in configuration. The loss curves and models are saved in the `experiments` directory. Each
+new run creates a new subdirectory to store training artifacts. 
+
+### Evaluate performance of the trained model
+```
+python -m pipeline.evaluate --splits val test
+```
+Evaluation script finds the best model (selected by validation loss during the training stage) and evaluates it on 
+data from the splits. The names of the splits are passed through command-line interface. The command line arguments
+also accepts a path to some other experiment directory (`-e` argument) and path to save the target method name for
+each example and predicted value. Script saves the outputs in the same experiment dir if no other value was provided to
 
 
-### 
+The command also prints F1 scores for each split. 
+
+
+
+
+
 

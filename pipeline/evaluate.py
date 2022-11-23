@@ -108,5 +108,6 @@ if __name__ == '__main__':
     parser = ArgumentParser()
     parser.add_argument('-e', '--experiment', help='Path to the experiment directory')
     parser.add_argument('--splits', help='Splits to evaluate on', default=['validation', 'test'], nargs='+')
+    parser.add_argument('--output-dir', help='Path to save the results')
     args = parser.parse_args()
-    evaluate(args.splits, args.experiment)
+    evaluate(args.splits, args.experiment, output_dir=args.output_dir)
