@@ -17,9 +17,9 @@ do_eval: True
 do_test: True
 
 training:
-  train_batch_size: 128 # Batch size per GPU/CPU for training
-  eval_batch_size: 128 # Batch size per GPU/CPU for evaluation
-  gradient_accumulation_steps: 1 # Number of updates steps to accumulate before performing a backward/update pass
+  train_batch_size: 112 # Batch size per GPU/CPU for training
+  eval_batch_size: 112 # Batch size per GPU/CPU for evaluation
+#  gradient_accumulation_steps: 1 # Number of updates steps to accumulate before performing a backward/update pass
   learning_rate: 5e-5 # The initial learning rate for Adam
   beam_size: 10 # beam size for beam search
   weight_decay: 0.0 # Weight decay if we apply some
@@ -27,8 +27,8 @@ training:
   max_grad_norm: 1.0 # Max gradient norm
   num_train_epochs: 3.0 # Total number of training epochs to perform
   max_steps: -1 # If > 0: set total number of training steps to perform. Override num_train_epochs
-  eval_steps: 500
-  train_steps: 30000
+  eval_steps: 1000
+  train_steps: 50000
   warmup_steps: 0 # Linear warmup over warmup_steps
   seed: 42 # random seed for initialization
   max_target_length: 32

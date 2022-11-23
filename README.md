@@ -12,12 +12,13 @@ provide code of the method as input to the model, we have the following options:
 - use some another tool to unparse existing AST and reproduce the source code of the method
 
 In the first case we basically need to find a declaration of a method and define the limits of it's body.
-It may seem as pretty straightforward task, but there are still some corner-cases like some markup in comments, strings, etc.
+It may seem as pretty straightforward task, but there are still some corner-cases like presence of commented-out code, 
+symbols in strings and so on.
 So it is still looks like reasonable solution for the demo purposes, but it is better to replace the parsing 
-functionality with some specialized solution like [astminer](https://github.com/JetBrains-Research/astminer) or 
+functionality with some specialized software like [astminer](https://github.com/JetBrains-Research/astminer) or 
 [javaparser](https://github.com/javaparser/javaparser).
 
-## Instructions
+## Training a model
 
 ### Download submodules
 ```
@@ -25,17 +26,28 @@ git submodule init
 git submodule update
 ```
 
-### Preprocess datasets
+### Dataset download
 
 Download datasets
 ```bash
-mkdir data/raw/
+mkdir -p data/raw/
 cd data/raw
-wget 
+wget https://s3.amazonaws.com/code2seq/datasets/java-small.tar.gz
+tar -xvzf java-large.tar.gz
+rm java-large.tar.gz
+cd ../..
 ```
 
-### Run preprocessing
+
+### Methods extraction
 
 ```bash
+python -m pip install -r requirements.txt
+mkdir data/preprocessed
 python -m pipeline.preprocess -i data/raw/java-small -o data/preprocessed/java-small --splits test validation training```
 ```
+This command extracts methods from the source files and saves extracted information in Apache Arrow format
+
+###
+
+
