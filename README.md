@@ -1,4 +1,4 @@
-# Prediction of Java method name by method body
+# Prediction of Java method name by it's body
 
 To solve the problem it is reasonable to select a pre-trained model and fine-tune it on some dataset.
 [CodeBERT](https://huggingface.co/microsoft/codebert-base) looks like a good choice. 
