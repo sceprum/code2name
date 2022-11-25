@@ -9,7 +9,7 @@ Data used in this paper is available in two forms: source files and AST trees st
 source code as input so some kind of preprocessing is required to prepare data for the training.
 Basically, we have the following options:
 - manually parse files with source code 
-- use some tool that are designed to parse a source code and use it to extract methods and their names
+- find some tool that are designed to parse a source code and use it to extract methods and their names
 - use some another tool to unparse existing AST and reproduce the source code of the method
 
 To train a model we need to find a declaration of a method and define the limits of it's body.
@@ -45,7 +45,7 @@ cd ../..
 ```bash
 python -m pip install -r requirements.txt
 mkdir data/preprocessed
-python -m pipeline.preprocess -i data/raw/java-small -o data/preprocessed/java-small --splits test validation training```
+python -m pipeline.preprocess -i data/raw/java-small -o data/preprocessed/java-small --splits test validation training
 ```
 This command extracts methods from the source files and saves extracted information in Apache Arrow format
 
