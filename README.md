@@ -66,7 +66,7 @@ python -m pipeline.evaluate --splits val test
 Evaluation script finds the best model (selected by validation loss during the training stage) and evaluates it on 
 data from the splits. The names of the splits are passed through command-line interface. The command line arguments
 also accepts a path to some other experiment directory (`-e` argument) and path to save the target method name for
-each example and predicted value. Script saves the outputs in the same experiment dir if no other value was provided to
+each example and predicted value. Script saves the outputs in the same experiment directory if no other value was provided.
 
 
 The command also prints F1 scores for each split. The expected metrics are presented in the table below
